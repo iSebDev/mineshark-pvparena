@@ -1,0 +1,7 @@
+name: MineShark1
+version: '${project.version}'
+main: org.mineshark.ms1.me.seb.java.MineShark1
+authors:
+  - SebDev
+  - MineShark
+author: SebDev
