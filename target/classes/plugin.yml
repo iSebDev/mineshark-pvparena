@@ -1,5 +1,5 @@
 name: MineShark1
-version: '${project.version}'
+version: '1.0-SNAPSHOT'
 main: org.mineshark.ms1.me.seb.java.MineShark1
 authors:
   - SebDev

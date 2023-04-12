@@ -1,6 +1,6 @@
 package org.mineshark.ms1.me.seb.java;
 
-import com.sun.istack.internal.NotNull;
+import org.jetbrains.annotations.NotNull;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.ConsoleCommandSender;
@@ -30,34 +30,30 @@ public final class MineShark1 extends JavaPlugin {
         return Bukkit.getConsoleSender();
     }
 
+    private void initConfig() throws Exception {
+        configuration = new Configuration(this);
+        console().sendMessage(format("&e[MineShark] &aSuccess load of Configuration"));
+    }
+
+    private void initData() throws Exception {
+        data = new Data(this);
+        console().sendMessage(format("&e[MineShark] &aSuccess load of Data"));
+    }
+
+    private void initGameHandler() throws Exception {
+        handler = new GameHandler(this);
+        console().sendMessage(format("&e[MineShark] &aSuccess load of GameHandler"));
+    }
+
     @Override
     public void onEnable() {
-        // Plugin startup logic
         super.onEnable();
-
         try {
-            configuration = new Configuration(this);
-            console().sendMessage(format("&e[MineShark] &aSuccess load of Configuration"));
+            initConfig();
+            initData();
+            initGameHandler();
         } catch (Exception e) {
-            console().sendMessage(format("&e[MineShark] &cError when try to load Configuration."));
-            e.printStackTrace();
-            Bukkit.getServer().getPluginManager().disablePlugin(this);
-        }
-
-        try {
-            data = new Data(this);
-            console().sendMessage(format("&e[MineShark] &aSuccess load of Data"));
-        } catch (Exception e) {
-            console().sendMessage(format("&e[MineShark] &cError when try to load Data."));
-            e.printStackTrace();
-            Bukkit.getServer().getPluginManager().disablePlugin(this);
-        }
-
-        try {
-            handler = new GameHandler(this);
-            console().sendMessage(format("&e[MineShark] &aSuccess load of GameHandler"));
-        } catch (Exception e) {
-            console().sendMessage(format("&e[MineShark] &cError when try to load GameHandler, enable debug in the config for more info!"));
+            console().sendMessage(format("&e[MineShark] &cPlugin disabled due to an error during startup."));
             if (configuration.getConfig().getBoolean("debug")) {
                 e.printStackTrace();
             }

@@ -1,0 +1,8 @@
+org\mineshark\ms1\me\seb\java\manager\GameHandler.class
+org\mineshark\ms1\me\seb\java\commands\PlayerCommands.class
+org\mineshark\ms1\me\seb\java\manager\Configuration.class
+org\mineshark\ms1\me\seb\java\manager\Data.class
+org\mineshark\ms1\me\seb\java\events\Damage.class
+org\mineshark\ms1\me\seb\java\events\Interact.class
+org\mineshark\ms1\me\seb\java\MineShark1.class
+org\mineshark\ms1\me\seb\java\commands\AdminCommand.class

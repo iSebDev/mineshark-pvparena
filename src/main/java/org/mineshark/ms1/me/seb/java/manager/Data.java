@@ -44,8 +44,8 @@ public class Data {
         if(!this.plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdir();
         }
-        if(this.configFile == null) this.configFile = new File(this.plugin.getDataFolder(), "config.yml");
-        if(!this.configFile.exists()) this.plugin.saveResource("config.yml", false);
+        if(this.configFile == null) this.configFile = new File(this.plugin.getDataFolder(), "data.yml");
+        if(!this.configFile.exists()) this.plugin.saveResource("data.yml", false);
     }
 }
 

@@ -1,6 +1,6 @@
 package org.mineshark.ms1.me.seb.java.events;
 
-import com.sun.istack.internal.NotNull;
+import org.jetbrains.annotations.NotNull;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -35,6 +35,7 @@ public class Interact implements Listener {
 
         if(player.getInventory().getItemInMainHand().equals(tool)
                 && plugin.handler.inSetup.containsKey(player.getUniqueId())) {
+            plugin.console().sendMessage(plugin.format("&e[MineShark] &fPlayer &b{} &finteract in Setup Mode!".replace("{}", player.getName())));
             plugin.handler.addLocation(player, plugin.handler.inSetup.get(player.getUniqueId()),
                     e.getClickedBlock().getLocation());
         }

@@ -1,0 +1,8 @@
+# < == Example == >
+#   id:
+#     world: world
+#     locations:
+#     - x,y,z
+#     - x,y,z
+
+data: {}
