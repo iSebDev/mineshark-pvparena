@@ -1,6 +1,0 @@
-debug: false
-
-minplayers:
-
-messages:
-  join: "&7[&a+&7] &e%p entro al juego &f&l(%count jugadores)"
