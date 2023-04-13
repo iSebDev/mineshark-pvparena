@@ -20,13 +20,12 @@ public class AdminCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         if(args.length < 2) {
-            player.sendMessage(plugin.format("&e[Mineshark] &f/mineshark1 <setup, create, delete> <arena>"));
+            player.sendMessage(plugin.format("&e[Mineshark] &f/minesharkpvp <setup, create, delete> <arena>"));
+            player.sendMessage(plugin.format("&e[Mineshark] &f/minesharkpvp setspawn"));
             return true;
         }
 
-        if(args.length == 2) {
-
-        }else if(args.length > 2) {
+        if(args.length > 2) {
             player.sendMessage(plugin.format("&cUsage: /mineshark1 {} <arena>"
                     .replace("{}", args[0])));
         }
@@ -41,6 +40,8 @@ public class AdminCommand implements CommandExecutor {
             plugin.handler.setupArena(player, args[1]);
         }else if(args[0].equalsIgnoreCase("delete")) {
             plugin.handler.removeArena(player, args[1]);
+        }else if(args[0].equalsIgnoreCase("setspawn")) {
+            plugin.handler.setSpawn(player);
         }else {
             player.sendMessage(plugin.format("&e[Mineshark] &f/mineshark1 <setup, create, delete> <arena>"));
         }

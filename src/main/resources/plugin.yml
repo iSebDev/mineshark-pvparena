@@ -6,6 +6,12 @@ authors:
   - MineShark
 author: SebDev
 commands:
-  minesharkarena:
+  minesharkpvp:
     permission: mineshark.admin
     aliases: [mineshark1]
+
+  join:
+    aliases: [joinpvp]
+
+  leave:
+    aliases: [leavepvp]

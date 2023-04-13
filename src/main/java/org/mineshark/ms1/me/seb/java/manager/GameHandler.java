@@ -1,10 +1,14 @@
 package org.mineshark.ms1.me.seb.java.manager;
 
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -15,7 +19,7 @@ import org.mineshark.ms1.me.seb.java.events.Interact;
 
 import java.util.*;
 
-public class GameHandler {
+public class GameHandler implements Listener {
     /*
     Setup Game Handler
 
@@ -25,7 +29,7 @@ public class GameHandler {
      */
 
     private static MineShark1 plugin;
-    public final Map<String, Map<UUID, Long>> arenas = new HashMap<>();
+    public final Map<String, Map<UUID, Integer>> arenas = new HashMap<>();
 
     public final Map<UUID, String> players = new HashMap<>();
 
@@ -41,6 +45,7 @@ public class GameHandler {
         plugin.getCommand("minesharkarena").setExecutor(new AdminCommand(plugin));
 
         Bukkit.getServer().getPluginManager().registerEvents(new Interact(plugin), plugin);
+        Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     public void addLocation(Player player, String id, Location location) {
@@ -109,6 +114,11 @@ public class GameHandler {
     }
 
     public void setupArena(Player player, String id) {
+        if(players.containsKey(player.getUniqueId())) {
+            player.sendMessage(plugin.format("&7(!) &cTienes que no estar en juego para poder estar en Modo Setup !"));
+            return;
+        }
+
         if(plugin.getData().getString(id) == null) {
             player.sendMessage(plugin.format("&7(!) &cEl juego &b{0} &cno existe !".replace("{0}", id)));
         } else {
@@ -132,9 +142,17 @@ public class GameHandler {
 
             GameMode gm = player.getGameMode();
 
-
             player.setGameMode(GameMode.CREATIVE);
+
+            World world = Bukkit.getWorld(plugin.getData().getString(id+".world"));
+
+            Location location = world.getSpawnLocation();
+
+            player.teleport(location);
+
             player.sendMessage(plugin.format("&7(!) &aEntraste al modo setup"));
+
+            player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1f, 1f);
         }
     }
 
@@ -145,5 +163,163 @@ public class GameHandler {
         player.getInventory().setContents(cache.get(player.getUniqueId()).getContents());
         cache.remove(player.getUniqueId());
         player.sendMessage(plugin.format("&7(!) &aSaliste del modo setup"));
+
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1f, 1f);
+    }
+
+    private Location randomLocation(String arena) {
+        Random random = new Random();
+        double x;
+        double y;
+        double z;
+
+        World world = Bukkit.getServer().getWorld(
+            plugin.getData().getString(arena+".world")
+        );
+
+        List<String> locs = locations.get(arena);
+        String nextLoc = locs.get(
+                random.nextInt(locs.size())
+        );
+
+        String[] finalLocString = nextLoc.split(",");
+
+        x = Double.parseDouble(finalLocString[0]);
+        y = Double.parseDouble(finalLocString[1]);
+        z = Double.parseDouble(finalLocString[2]);
+
+        Location finalLocation = new Location(world, x, y ,z);
+
+        return finalLocation;
+    }
+
+    private static void sendActionBar(Player player, String string) {
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(plugin.format(string)));
+    }
+
+    public void joinPlayer(Player player, String id) {
+        if(isInSetup(player.getUniqueId())) {
+            setupLeave(player);
+        }
+
+        if(!locations.containsKey(id)) return;
+
+        if(players.containsKey(player.getUniqueId())) {
+            player.sendMessage(plugin.format("&7(!) &cYa estas en un juego !"));
+        }else {
+
+            players.put(player.getUniqueId(), id);
+            Location location = null;
+            if(plugin.configuration.getConfig().getBoolean("game.ran-spawn-loc")) {
+
+                location = randomLocation(id);
+
+            }else {
+
+                plugin.console().sendMessage(plugin.format("&e[MineShark] &cStep Safe Locations are indev"));
+
+            }
+
+            player.teleport(location);
+
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+
+            for(String i : plugin.configuration.getConfig().getStringList("messages.join")) {
+                player.sendMessage(plugin.format(i));
+            }
+
+            player.setNoDamageTicks(20*plugin.configuration.getConfig().getInt("game.safe-time"));
+            sendActionBar(player, "&aTienes unos segundos de invulnerabilidad!");
+        }
+    }
+
+    public void leavePlayer(Player player) {
+        players.remove(player.getUniqueId());
+    }
+
+    public void setSpawn(Player player) {
+        double x = player.getLocation().getX();
+        double y = player.getLocation().getX();
+        double z = player.getLocation().getX();
+        float yaw = player.getLocation().getYaw();
+        float pitch = player.getLocation().getPitch();
+        World world = player.getLocation().getWorld();
+
+        plugin.configuration.getConfig().set("spawn.world", world.getName());
+        plugin.configuration.getConfig().set("spawn.x", x);
+        plugin.configuration.getConfig().set("spawn.y", y);
+        plugin.configuration.getConfig().set("spawn.z", z);
+        plugin.configuration.getConfig().set("spawn.yaw", yaw);
+        plugin.configuration.getConfig().set("spawn.pitch", pitch);
+
+        plugin.updateFiles();
+
+        player.sendMessage(plugin.format("&7(!) &aSpawn seteo completado !"));
+    }
+
+    public void teleportSpawn(Player player) {
+        if(!(plugin.configuration.getConfig().getString("world") == null)) return;
+        World world = Bukkit.getServer().getWorld(
+                plugin.configuration.getConfig().getString("spawn.world")
+        );
+        double x = plugin.configuration.getConfig().getDouble("spawn.x" );
+        double y = plugin.configuration.getConfig().getDouble("spawn.y");
+        double z = plugin.configuration.getConfig().getDouble("spawn.z");
+        float yaw = (float) plugin.configuration.getConfig().get("spawn.yaw");
+        float pitch = (float) plugin.configuration.getConfig().get("spawn.pitch");
+
+        Location location = new Location(world, x, y, z);
+
+        location.setYaw(yaw);
+
+        location.setPitch(pitch);
+
+        player.teleport(location);
+    }
+
+    @EventHandler
+    public void playerChangeWorld(PlayerChangedWorldEvent e) {
+        Player player = e.getPlayer();
+
+        if(players.containsValue(player.getUniqueId())) {
+
+            leavePlayer(player);
+
+        }
+    }
+
+    @EventHandler
+    public void playerDeath(PlayerDeathEvent e) {
+        if(!(e.getEntity() instanceof Player)) return;
+
+        Player player = (Player) e.getEntity();
+
+        if(players.containsValue(player.getUniqueId())) {
+
+            leavePlayer(player);
+
+        }
+
+        if(plugin.configuration.getConfig().getBoolean("death.strike-lightning")) {
+
+            player.getWorld().strikeLightning(player.getLocation());
+
+        }
+    }
+
+    @EventHandler
+    public void playerRespawn(PlayerRespawnEvent e) {
+
+        Player player = e.getPlayer();
+        for (String i : plugin.configuration.getConfig()
+                .getStringList("death.console-execute")) {
+            Bukkit.dispatchCommand(plugin.console(), i.replace("%p", player.getName()));
+        }
+
+        for (String i : plugin.configuration.getConfig()
+                .getStringList("death.player-execute")) {
+            Bukkit.dispatchCommand(player, i.replace("%p", player.getName()));
+        }
     }
 }
+
