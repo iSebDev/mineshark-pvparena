@@ -15,6 +15,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.mineshark.ms1.me.seb.java.MineShark1;
 import org.mineshark.ms1.me.seb.java.commands.AdminCommand;
+import org.mineshark.ms1.me.seb.java.commands.PlayerCommands;
 import org.mineshark.ms1.me.seb.java.events.Interact;
 
 import java.util.*;
@@ -42,7 +43,10 @@ public class GameHandler implements Listener {
     public GameHandler(MineShark1 instance) {
         plugin = instance;
 
-        plugin.getCommand("minesharkarena").setExecutor(new AdminCommand(plugin));
+        plugin.getCommand("minesharkpvp").setExecutor(new AdminCommand(plugin));
+
+        plugin.getCommand("join").setExecutor(new PlayerCommands(plugin));
+        plugin.getCommand("leave").setExecutor(new PlayerCommands(plugin));
 
         Bukkit.getServer().getPluginManager().registerEvents(new Interact(plugin), plugin);
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
@@ -148,6 +152,9 @@ public class GameHandler implements Listener {
 
             Location location = world.getSpawnLocation();
 
+            location.setY(location.getY() + 100);
+            player.setFlying(false);
+
             player.teleport(location);
 
             player.sendMessage(plugin.format("&7(!) &aEntraste al modo setup"));
@@ -165,6 +172,10 @@ public class GameHandler implements Listener {
         player.sendMessage(plugin.format("&7(!) &aSaliste del modo setup"));
 
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1f, 1f);
+
+        if(plugin.configuration.getConfig().getString("spawn") == null) return;
+
+        teleportSpawn(player);
     }
 
     private Location randomLocation(String arena) {
@@ -188,18 +199,16 @@ public class GameHandler implements Listener {
         y = Double.parseDouble(finalLocString[1]);
         z = Double.parseDouble(finalLocString[2]);
 
-        Location finalLocation = new Location(world, x, y ,z);
-
-        return finalLocation;
-    }
-
-    private static void sendActionBar(Player player, String string) {
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(plugin.format(string)));
+        return new Location(world, x, y ,z);
     }
 
     public void joinPlayer(Player player, String id) {
         if(isInSetup(player.getUniqueId())) {
             setupLeave(player);
+        }
+
+        if(plugin.getData().get(id+".locations") == null) {
+            player.sendMessage(plugin.format("&7(!) &cError al intentar entrar al juego, contacta con el administrador!"));
         }
 
         if(!locations.containsKey(id)) return;
@@ -224,12 +233,21 @@ public class GameHandler implements Listener {
 
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
 
+            player.setGameMode(GameMode.SURVIVAL);
+
             for(String i : plugin.configuration.getConfig().getStringList("messages.join")) {
                 player.sendMessage(plugin.format(i));
             }
 
             player.setNoDamageTicks(20*plugin.configuration.getConfig().getInt("game.safe-time"));
+            /*
+            player.setNoDamageTicks(20*plugin.configuration.getConfig().getInt("game.safe-time"));
             sendActionBar(player, "&aTienes unos segundos de invulnerabilidad!");
+            */
+
+            SafeCountdown countdown = new SafeCountdown(plugin, player, plugin.configuration.getConfig().getInt("game.safe-time"));
+
+            countdown.start();
         }
     }
 
@@ -239,8 +257,8 @@ public class GameHandler implements Listener {
 
     public void setSpawn(Player player) {
         double x = player.getLocation().getX();
-        double y = player.getLocation().getX();
-        double z = player.getLocation().getX();
+        double y = player.getLocation().getY();
+        double z = player.getLocation().getZ();
         float yaw = player.getLocation().getYaw();
         float pitch = player.getLocation().getPitch();
         World world = player.getLocation().getWorld();
@@ -258,15 +276,15 @@ public class GameHandler implements Listener {
     }
 
     public void teleportSpawn(Player player) {
-        if(!(plugin.configuration.getConfig().getString("world") == null)) return;
+        if(plugin.configuration.getConfig().getString("spawn.world") == null) return;
         World world = Bukkit.getServer().getWorld(
                 plugin.configuration.getConfig().getString("spawn.world")
         );
         double x = plugin.configuration.getConfig().getDouble("spawn.x" );
         double y = plugin.configuration.getConfig().getDouble("spawn.y");
         double z = plugin.configuration.getConfig().getDouble("spawn.z");
-        float yaw = (float) plugin.configuration.getConfig().get("spawn.yaw");
-        float pitch = (float) plugin.configuration.getConfig().get("spawn.pitch");
+        float yaw = plugin.configuration.getConfig().getInt("spawn.yaw");
+        float pitch = plugin.configuration.getConfig().getInt("spawn.pitch");
 
         Location location = new Location(world, x, y, z);
 
@@ -275,6 +293,8 @@ public class GameHandler implements Listener {
         location.setPitch(pitch);
 
         player.teleport(location);
+
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 1f, 1f);
     }
 
     @EventHandler
@@ -294,13 +314,9 @@ public class GameHandler implements Listener {
 
         Player player = (Player) e.getEntity();
 
-        if(players.containsValue(player.getUniqueId())) {
+        if(!players.containsValue(player.getUniqueId())) return;
 
-            leavePlayer(player);
-
-        }
-
-        if(plugin.configuration.getConfig().getBoolean("death.strike-lightning")) {
+        if(plugin.configuration.getConfig().getBoolean("death.summon-lightning")) {
 
             player.getWorld().strikeLightning(player.getLocation());
 
@@ -311,15 +327,24 @@ public class GameHandler implements Listener {
     public void playerRespawn(PlayerRespawnEvent e) {
 
         Player player = e.getPlayer();
+
+        if(!players.containsKey(player.getUniqueId())) return;
+
         for (String i : plugin.configuration.getConfig()
                 .getStringList("death.console-execute")) {
-            Bukkit.dispatchCommand(plugin.console(), i.replace("%p", player.getName()));
+            //Bukkit.dispatchCommand(plugin.console(), i.replace("%p", player.getName()));
+            Bukkit.getServer().dispatchCommand(plugin.console(), i.replace("%p", player.getName()));
         }
 
         for (String i : plugin.configuration.getConfig()
                 .getStringList("death.player-execute")) {
-            Bukkit.dispatchCommand(player, i.replace("%p", player.getName()));
+            Bukkit.getServer().dispatchCommand(player, i.replace("%p", player.getName()));
         }
+
+        leavePlayer(player);
+
+        teleportSpawn(player);
+
     }
 }
 
