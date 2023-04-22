@@ -6,6 +6,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mineshark.ms1.me.seb.java.manager.ChestManager;
 import org.mineshark.ms1.me.seb.java.manager.Configuration;
 import org.mineshark.ms1.me.seb.java.manager.Data;
 import org.mineshark.ms1.me.seb.java.manager.GameHandler;
@@ -16,6 +17,8 @@ public final class MineShark1 extends JavaPlugin {
     }
 
     public GameHandler handler;
+
+    public ChestManager manaChest;
 
     public Configuration configuration;
     private Data data;
@@ -42,6 +45,7 @@ public final class MineShark1 extends JavaPlugin {
 
     private void initGameHandler() throws Exception {
         handler = new GameHandler(this);
+        manaChest = new manaChest(this);
         console().sendMessage(format("&e[MineShark] &aSuccess load of GameHandler"));
         if(configuration.getConfig().getString("spawn.x") != null) {
             console().sendMessage(format("&e[MineShark] &aSpawn location and %a games loaded!".

@@ -1,11 +1,10 @@
 package org.mineshark.ms1.me.seb.java.manager;
 
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -34,6 +33,8 @@ public class GameHandler implements Listener {
 
     public final Map<UUID, String> players = new HashMap<>();
 
+    public final List<UUID> invulnerables = new ArrayList<>();
+
     public final Map<String, List<String>> locations = new HashMap<>();
 
     private final Map<UUID, Inventory> cache = new HashMap<>();
@@ -50,6 +51,7 @@ public class GameHandler implements Listener {
 
         Bukkit.getServer().getPluginManager().registerEvents(new Interact(plugin), plugin);
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
+        Bukkit.getServer().getPluginManager().registerEvents(new ChestManager(plugin), plugin);
     }
 
     public void addLocation(Player player, String id, Location location) {
@@ -144,6 +146,16 @@ public class GameHandler implements Listener {
 
             player.getInventory().addItem(tool);
 
+            ItemStack tool2 = new ItemStack(Material.STICK);
+
+            ItemMeta meta2 = tool.getItemMeta();
+
+            meta2.setDisplayName(plugin.format("&eChests Tool"));
+
+            tool2.setItemMeta(meta);
+
+            player.getInventory().addItem(tool);
+
             GameMode gm = player.getGameMode();
 
             player.setGameMode(GameMode.CREATIVE);
@@ -223,10 +235,6 @@ public class GameHandler implements Listener {
 
                 location = randomLocation(id);
 
-            }else {
-
-                plugin.console().sendMessage(plugin.format("&e[MineShark] &cStep Safe Locations are indev"));
-
             }
 
             player.teleport(location);
@@ -238,6 +246,8 @@ public class GameHandler implements Listener {
             for(String i : plugin.configuration.getConfig().getStringList("messages.join")) {
                 player.sendMessage(plugin.format(i));
             }
+
+            invulnerables.add(player.getUniqueId());
 
             player.setNoDamageTicks(20*plugin.configuration.getConfig().getInt("game.safe-time"));
             /*
@@ -253,6 +263,9 @@ public class GameHandler implements Listener {
 
     public void leavePlayer(Player player) {
         players.remove(player.getUniqueId());
+        for(String i : plugin.configuration.getConfig().getStringList("messages.leave")) {
+            player.sendMessage(plugin.format(i));
+        }
     }
 
     public void setSpawn(Player player) {
@@ -272,7 +285,8 @@ public class GameHandler implements Listener {
 
         plugin.updateFiles();
 
-        player.sendMessage(plugin.format("&7(!) &aSpawn seteo completado !"));
+        player.sendMessage(plugin.format("&7(!) &aSpawn seteado correctamente !"));
+
     }
 
     public void teleportSpawn(Player player) {
@@ -345,6 +359,46 @@ public class GameHandler implements Listener {
 
         teleportSpawn(player);
 
+    }
+
+    /*
+
+    =================================              REGLAS              =================================
+
+        Cuando el jugador está jugando y otro lo golpea, y no esta jugando se cancelara el evento!
+            When the player is playing and another hits him, and he is not playing,
+            the event will be cancelled!
+
+        Cuando el jugador es invulnerable no puede ser golpeado ni puede golpear a los demas!
+            When the player is invulnerable they cannot be hit nor can they hit others!
+
+     */
+    @EventHandler
+    public void takeDamage(EntityDamageByEntityEvent e) {
+        if(e.getEntity() instanceof Player
+                && e.getDamager() instanceof Player) {
+
+            Player player = (Player) e.getEntity();
+
+            Player damager = (Player) e.getEntity();
+
+            if(players.containsKey(player.getUniqueId())
+                    && players.containsKey(damager.getUniqueId())) {
+
+                if (!players.get(player.getUniqueId())
+                        .equals(players.get(damager.getUniqueId()))) return;
+
+                if (invulnerables.contains(damager.getUniqueId())
+                        || invulnerables.contains(player.getUniqueId())) {
+                    e.setCancelled(true);
+                }
+            }else if (!players.containsKey(damager.getUniqueId())
+                    && players.containsKey(player.getUniqueId())) {
+                e.setCancelled(true);
+            }else {
+                return;
+            }
+        }
     }
 }
 

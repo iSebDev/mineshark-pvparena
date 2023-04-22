@@ -10,16 +10,27 @@ messages:
     - "&cCuidado, pueden ver jugadores"
     - "&eTendras unos segundos de invulnerabilidad"
     - "&7-----------------------------------"
-  leave: ""
+  leave:
+    - ""
   safe-actionbar: "&a&lEstas seguro por &f%time !"
+  are-in-game: "&7(!) &cYa estas en un juego !"
+  error:
 
 game:
   # ran-spawn-loc | Los jugadores aparecen en lugares random si esto esta activo
+  # no se programo nada cuando ran-spawn-loc sea false
   ran-spawn-loc: true
   safe-time: 10
 
+  chest-open:
+    # EffectType,duration(In seconds),amplifier
+    effect:
+      - "SLOWNESS,1,1"
+
 spawn: {}
 
+# Al morir el jugador se ejecutan comandos o se spawnea un rayo en el lugar que murio
+# Placeholder: %p | Player name | Esto para comandos
 death:
   summon-lightning: true
   player-execute:

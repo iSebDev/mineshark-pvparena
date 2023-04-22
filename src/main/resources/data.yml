@@ -4,5 +4,8 @@
 #     locations:
 #     - x,y,z
 #     - x,y,z
+#     chests:
+#     - x,y,z;rcontent
+#     - x,y,z;rcontent
 
 data: {}

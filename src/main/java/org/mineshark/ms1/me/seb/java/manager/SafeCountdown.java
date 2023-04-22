@@ -36,6 +36,7 @@ public class SafeCountdown extends BukkitRunnable {
         );
 
         if (countdown == 0) {
+            plugin.handler.invulnerables.remove(player.getUniqueId());
             this.cancel();
         }
     }
