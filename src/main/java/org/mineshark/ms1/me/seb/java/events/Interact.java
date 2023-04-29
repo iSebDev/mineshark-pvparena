@@ -57,6 +57,7 @@ public class Interact implements Listener {
                 && plugin.handler.inSetup.containsKey(player.getUniqueId())) {
             plugin.console().sendMessage(plugin.format(
                     "&e[MineShark] &fPlayer &b{} &finteract in Setup Mode!".replace("{}", player.getName())));
+            if(!e.getClickedBlock().getType().equals(Material.CHEST)) return;
         }
 
     }
@@ -69,16 +70,15 @@ public class Interact implements Listener {
 
         List<String> effects = plugin.configuration.getConfig().getStringList("game.chest-open.effect");
 
-        if(!(effects.size() >= 1)) return;
+        if(effects.size() < 1) return;
 
         for(String effect : effects) {
             String[] data = effect.replace(" ", "")
                     .split(",");
-
             PotionEffect finalEffect = new PotionEffect(
                     PotionEffectType.getByName(data[0]),
-                    Integer.valueOf(data[1])*20,
-                    Integer.valueOf(data[2])
+                    Integer.parseInt(data[1])*20,
+                    Integer.parseInt(data[2])
             );
 
             player.addPotionEffect(finalEffect);

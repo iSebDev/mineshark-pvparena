@@ -45,7 +45,7 @@ public final class MineShark1 extends JavaPlugin {
 
     private void initGameHandler() throws Exception {
         handler = new GameHandler(this);
-        manaChest = new manaChest(this);
+        manaChest = new ChestManager(this);
         console().sendMessage(format("&e[MineShark] &aSuccess load of GameHandler"));
         if(configuration.getConfig().getString("spawn.x") != null) {
             console().sendMessage(format("&e[MineShark] &aSpawn location and %a games loaded!".
